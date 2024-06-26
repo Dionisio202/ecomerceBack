@@ -37,17 +37,28 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const user = await this.userRepository.preload({
-      id,
-      ...updateUserDto,
-    });
+    const existingUser = await this.userRepository.findOne({ where: { id } });
 
-    if (!user) {
+    if (!existingUser) {
       throw new BadRequestException('User not found');
     }
 
-    return this.userRepository.save(user);
+    if (updateUserDto.email) {
+      const userWithSameEmail = await this.userRepository.findOne({ where: { email: updateUserDto.email } });
+      if (userWithSameEmail && userWithSameEmail.id !== id) {
+        throw new BadRequestException('Email already in use');
+      }
+    }
+
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    Object.assign(existingUser, updateUserDto);
+
+    return this.userRepository.save(existingUser);
   }
+
 
   async remove(id: number) {
     const user = await this.userRepository.findOne({ where: { id } });
