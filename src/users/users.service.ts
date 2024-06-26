@@ -1,14 +1,15 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcryptjs';
+import { UpdateUserInfoDto } from './dto/update-user-info.dto';
+import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 
 @Injectable()
 export class UsersService {
-
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -58,5 +59,35 @@ export class UsersService {
 
   findOneByEmail(email: string) {
     return this.userRepository.findOne({ where: { email } });
+  }
+
+  async updateInfo(userId: number, updateUserInfoDto: UpdateUserInfoDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    Object.assign(user, updateUserInfoDto);
+
+    return this.userRepository.save(user);
+  }
+
+  async changePassword(userId: number, updateUserPasswordDto: UpdateUserPasswordDto) {
+    const { currentPassword, newPassword } = updateUserPasswordDto;
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    return this.userRepository.save(user);
   }
 }
