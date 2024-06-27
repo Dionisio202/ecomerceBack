@@ -10,7 +10,7 @@ export class Producto {
     @PrimaryGeneratedColumn()
     product_id: number;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 255, unique: true })
     name: string;
 
     @Column({ type: 'decimal', precision: 10, scale: 2 })

@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CarritoCompra } from './entities/carrito-compra.entity';
 import { Repository } from 'typeorm';
 import { Cliente } from 'src/clientes/entities/cliente.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class CarritoComprasService {
@@ -13,19 +14,31 @@ export class CarritoComprasService {
     @InjectRepository(CarritoCompra)
     private readonly carritoCompraRepository: Repository<CarritoCompra>,
 
-    @InjectRepository(Cliente)
-    private readonly clienteRepository: Repository<Cliente>,
+    @InjectRepository(User)
+    private readonly clienteRepository: Repository<User>,
   ) { }
 
   async create(createCarritoCompraDto: CreateCarritoCompraDto) {
-    const cliente = await this.clienteRepository.findOneBy({ client_id: createCarritoCompraDto.cliente });
-    if (!cliente) {
-      throw new BadRequestException("El cliente no existe");
+    try {
+      console.log('Buscando usuario con ID:', createCarritoCompraDto.cliente);
+
+      const user = await this.clienteRepository.findOne({
+        where: { id: createCarritoCompraDto.cliente }
+      });
+
+      if (!user) {
+        throw new BadRequestException("El usuario no existe");
+      }
+
+      const nuevoCarrito = this.carritoCompraRepository.create({
+        cliente: user,
+        // Aquí puedes agregar otros campos necesarios
+      });
+
+      return await this.carritoCompraRepository.save(nuevoCarrito);
+    } catch (error) {
+      console.error("Error creando el carrito de compras:", error);
     }
-    return await this.carritoCompraRepository.save({
-      ...createCarritoCompraDto,
-      cliente
-    });
   }
 
   async findAll() {
@@ -45,7 +58,7 @@ export class CarritoComprasService {
     if (!carrito) {
       throw new BadRequestException("El carrito de compras no existe");
     }
-    const cliente = await this.clienteRepository.findOneBy({ client_id: updateCarritoCompraDto.cliente });
+    const cliente = await this.clienteRepository.findOneBy({ id: updateCarritoCompraDto.cliente });
     if (!cliente) {
       throw new BadRequestException("El cliente no existe");
     }
