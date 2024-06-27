@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Pedido } from './entities/pedido.entity';
 import { Repository } from 'typeorm';
 import { Cliente } from 'src/clientes/entities/cliente.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class PedidosService {
@@ -13,12 +14,12 @@ export class PedidosService {
     @InjectRepository(Pedido)
     private readonly pedidoRepository: Repository<Pedido>,
 
-    @InjectRepository(Cliente)
-    private readonly clienteRepository: Repository<Cliente>,
+    @InjectRepository(User)
+    private readonly clienteRepository: Repository<User>,
   ) { }
 
   async create(createPedidoDto: CreatePedidoDto) {
-    const cliente = await this.clienteRepository.findOneBy({ client_id: createPedidoDto.cliente });
+    const cliente = await this.clienteRepository.findOneBy({ id: createPedidoDto.cliente });
     if (!cliente) {
       throw new BadRequestException("el cliente no existe");
     }
@@ -41,7 +42,7 @@ export class PedidosService {
   }
 
   async update(id: number, updatePedidoDto: UpdatePedidoDto) {
-    const cliente = await this.clienteRepository.findOneBy({ client_id: updatePedidoDto.cliente });
+    const cliente = await this.clienteRepository.findOneBy({ id: updatePedidoDto.cliente });
     if (!cliente) {
       throw new BadRequestException("el cliente no existe");
     }
